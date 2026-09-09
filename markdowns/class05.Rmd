@@ -1,0 +1,37 @@
+---
+title: "class05"
+author: "Isobel Bartels"
+date: "2026-09-09"
+output: html_document
+---
+
+```{r occupations}
+readxl::read_excel(
+path = "data/occupation.xlsx",
+sheet = 5, #sheet = "Table 1.4"
+skip = 1,
+n_max = 31)
+#when you subset in R drops these specfic things 
+#given that they are three, I put them in a vector
+#notice the "," after the parenthesis
+#nothing after the comma which means all column
+
+```
+
+##Read JSON Data
+```{r read_json}
+json_url = "https://data.cincinnati-oh.gov/resource/rvmt-pkmq.json?$limit=100"
+crashes_json = jsonlite::fromJSON(json_url)
+dplyr::glimpse(crashes_json)
+```
+
+#Heist Game
+```{r heist}
+logins = readr::read_csv("https://isa401-import-heist.vercel.app/api/stage1")
+summary(logins)
+#smithj31
+log = jsonlite::fromJSON("https://isa401-import-heist.vercel.app/api/stage2?key=smithj31")
+eventsdf = log$events
+jsonlite::fromJSON("https://isa401-import-heist.vercel.app/api/finish?code=6")
+```
+
