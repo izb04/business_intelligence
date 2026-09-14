@@ -1,0 +1,30 @@
+---
+title: "class06"
+author: "Isobel Bartels"
+date: "2026-09-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+run = readr::read_csv(
+  "https://isa401-find-your-seat.vercel.app/api/export?section=A&run=13")
+dplyr::glimpse(run)
+```
+
+```{r}
+con = DBI::dbConnect(RSQLite::SQLite(),"/Users/ib/Documents/PROJECTS/Senior Fall/ISA401/GitHub/business_intelligence/data/scout.db")
+DBI::dbListTables(con)
+postings = DBI::dbReadTable(con, "scout_postings")
+DBI::dbDisconnect(con)
+dplyr::glimpse(postings[, c("title", "company",
+  "location_state", "remote", "skills_json")])
+```
+
+```{r}
+first_cell = postings$skills_json[1]
+cat(strtrim(first_cell, 60))   # base R: first 60 characters
+skills = jsonlite::fromJSON(first_cell)
+skills
+```
+
+

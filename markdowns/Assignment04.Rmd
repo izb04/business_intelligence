@@ -1,0 +1,44 @@
+---
+title: 'Assignment 04: Subsetting and Import'
+author: "Isobel Bartels"
+date: "2026-09-13"
+output: html_document
+---
+
+```{r}
+file.choose()
+```
+
+```{r}
+con = DBI::dbConnect(RSQLite::SQLite(),"/Users/ib/Documents/PROJECTS/Senior Fall/ISA401/GitHub/business_intelligence/data/midwest_airbnb.db")
+listings = DBI::dbReadTable(con, "listings")
+```
+
+```{r question 2}
+sum(listings$city == "Columbus")
+```
+
+```{r question 3}
+chicago_listings <- listings[listings$city == "Chicago", ]
+
+max(chicago_listings$price, na.rm = TRUE)
+
+chicago_listings$name[which.max(chicago_listings$price)]
+```
+
+```{r question 4}
+length(unique(na.omit(chicago_listings$neighbourhood)))
+```
+
+
+```{r question 5}
+superhost <- listings$host_is_superhost
+sum(superhost == "t", na.rm = TRUE)
+
+```
+
+```{r}
+listingprice <- listings$price
+sum(listingprice > 1000, na.rm = TRUE)
+```
+
