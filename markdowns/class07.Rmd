@@ -1,0 +1,39 @@
+---
+title: "Class07"
+author: "Isobel Bartels"
+date: "2026-09-16"
+output: html_document:
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Answering Question about 
+```{r answer to q}
+con = DBI::dbConnect(RSQLite::SQLite(), "../data/scout.db")
+postings = DBI::dbReadTable(con, "scout_postings") |> tibble::as_tibble()
+DBI::dbDisconnect(con)
+
+jobs = postings |>
+  dplyr::select(company, title, location_state, remote, category, posted_at, last_seen_at) |>
+  dplyr::mutate(dplyr::across(dplyr::ends_with("_at"), as.Date),
+                days_open = as.numeric(last_seen_at - posted_at))
+jobs  
+
+#Q1 --Which cat is remote friendly
+# to answer that, the logic would be as follows"
+# Find the number of jobs per category 
+#normalize the number of remote jobs per category by diviing the total jobs 
+
+jobs |>
+  # i want to move from the unit of analysis being a job posting to a category 
+  dplyr::group_by(category) |>
+  dplyr::summarise(
+    postings = dplyr::n(),
+    remote_share = mean(remote)
+  )
+#remind me to show you how to compute remote)share diff in next clas
+```
+

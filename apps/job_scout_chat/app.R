@@ -1,7 +1,8 @@
 # apps/job_scout_chat/app.R
+
 library(querychat)
 
-con = DBI::dbConnect(RSQLite::SQLite(), "/Users/ib/Documents/PROJECTS/Senior Fall/ISA401/GitHub/business_intelligence/apps/job_scout_chat/data /scout.db")
+con = DBI::dbConnect(RSQLite::SQLite(), "data/scout.db")
 
 client = ellmer::chat_openai(
   model  = "gpt-5.6-luna",
@@ -16,4 +17,4 @@ qc = querychat(
               ChatISA Job Scout collected."
 )
 
-qc$app()
+qc$app_obj()
