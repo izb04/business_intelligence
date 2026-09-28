@@ -30,7 +30,7 @@ A1 = sum(host_counts$host_listing_count >= 10)
 chicago_share = listings_with_host_counts |>
   dplyr::filter(city == "Chicago") |>
   dplyr::summarise(percent = 100 * mean(host_listing_count >= 10))
-A2 = chicago_share$percent
+A2 = round(chicago_share$percent, digits = 1)
 A1
 A2
 ```
@@ -86,7 +86,7 @@ concentration = revenue_ranked |>
             total_revenue = sum(estimated_revenue_l365d, na.rm = TRUE),
             percent = 100 * top_revenue / total_revenue, .groups = "drop")
 columbus_concentration = concentration |> dplyr::filter(city == "Columbus")
-A5 = columbus_concentration$percent
+A5 = round(columbus_concentration$percent, digits = 1)
 concentration
 A5
 ```
@@ -94,7 +94,7 @@ A5
 ## 5. The year ahead
 
 The denominator is entire homes with an October 2026 availability row.
-Share is reported as a proportion (0 to 1), with a percentage alongside it.
+A7 is reported as a percent rounded to one decimal, as requested in the quiz.
 
 ```{r year-ahead}
 october_entire_homes = listings |>
@@ -107,7 +107,7 @@ october_shares = october_entire_homes |>
   dplyr::mutate(percent = 100 * share)
 lowest_share = october_shares |> dplyr::filter(share == min(share))
 A6 = lowest_share$city
-A7 = lowest_share$share
+A7 = round(lowest_share$percent, digits = 1)
 october_shares
 A6
 A7
@@ -128,7 +128,8 @@ twin_cities_demand = monthly_demand |> dplyr::filter(city == "Twin Cities")
 busiest_month = twin_cities_demand |>
   dplyr::filter(total_reviews == max(total_reviews))
 A8 = busiest_month$month
-A9 = max(twin_cities_demand$total_reviews) / min(twin_cities_demand$total_reviews)
+A9 = round(max(twin_cities_demand$total_reviews) /
+             min(twin_cities_demand$total_reviews), digits = 2)
 twin_cities_demand
 A8
 A9
