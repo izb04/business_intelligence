@@ -1,0 +1,172 @@
+---
+title: "Midwest Airbnb: Eight Analyses"
+author: "Isobel Bartels"
+date: "2026-09-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+con = DBI::dbConnect(RSQLite::SQLite(), "../data/midwest_airbnb_extended.db")
+listings = DBI::dbReadTable(con, "listings") |>
+  tibble::as_tibble()
+availability = DBI::dbReadTable(con, "availability_monthly") |>
+  tibble::as_tibble()
+reviews = DBI::dbReadTable(con, "reviews_monthly") |>
+  tibble::as_tibble()
+DBI::dbDisconnect(con)
+```
+
+## 1. Who owns the market
+
+```{r market-ownership}
+host_counts = listings |> dplyr::count(host_id, name = "host_listing_count")
+listings_with_host_counts = listings |>
+  dplyr::left_join(host_counts, by = "host_id")
+A1 = sum(host_counts$host_listing_count >= 10)
+chicago_share = listings_with_host_counts |>
+  dplyr::filter(city == "Chicago") |>
+  dplyr::summarise(percent = 100 * mean(host_listing_count >= 10))
+A2 = chicago_share$percent
+A1
+A2
+```
+
+## 2. Value for a family of four
+
+```{r family-value}
+family_value = listings |>
+  dplyr::filter(room_type == "Entire home/apt", accommodates >= 4,
+         number_of_reviews >= 10, review_scores_rating >= 4.8) |>
+  dplyr::mutate(price_per_person = price / accommodates) |>
+  dplyr::group_by(city, neighbourhood) |>
+  dplyr::summarise(n_listings = dplyr::n(),
+            median_price_per_person = median(price_per_person, na.rm = TRUE),
+            .groups = "drop") |>
+  dplyr::filter(n_listings >= 20)
+columbus_best_value = family_value |>
+  dplyr::filter(city == "Columbus") |>
+  dplyr::filter(median_price_per_person == min(median_price_per_person, na.rm = TRUE))
+A3 = columbus_best_value$neighbourhood
+columbus_best_value
+A3
+```
+
+## 3. What earns
+
+```{r earnings}
+earnings = listings |>
+  dplyr::group_by(city, room_type) |>
+  dplyr::summarise(dplyr::across(c(price, reviews_per_month, estimated_revenue_l365d),
+                   ~ median(.x, na.rm = TRUE)), .groups = "drop")
+twin_cities_earnings = earnings |>
+  dplyr::filter(city == "Twin Cities", room_type == "Entire home/apt")
+A4 = twin_cities_earnings$estimated_revenue_l365d
+earnings
+A4
+```
+
+## 4. Concentration
+
+```{r concentration}
+revenue_ranked = listings |>
+  dplyr::group_by(city) |>
+  dplyr::arrange(dplyr::desc(estimated_revenue_l365d), .by_group = TRUE) |>
+  dplyr::mutate(top_ten_percent = dplyr::row_number() <= ceiling(0.10 * dplyr::n())) |>
+  dplyr::ungroup()
+concentration = revenue_ranked |>
+  dplyr::group_by(city) |>
+  dplyr::summarise(top_revenue = sum(estimated_revenue_l365d[top_ten_percent], na.rm = TRUE),
+            total_revenue = sum(estimated_revenue_l365d, na.rm = TRUE),
+            percent = 100 * top_revenue / total_revenue, .groups = "drop")
+columbus_concentration = concentration |> dplyr::filter(city == "Columbus")
+A5 = columbus_concentration$percent
+concentration
+A5
+```
+
+## 5. The year ahead
+
+```{r year-ahead}
+october_entire_homes = listings |>
+  dplyr::filter(room_type == "Entire home/apt") |>
+  dplyr::inner_join(availability |> dplyr::filter(month == "2026-10"), by = "id") |>
+  dplyr::mutate(mostly_taken = nights_available < 0.5 * nights_in_month)
+october_shares = october_entire_homes |>
+  dplyr::group_by(city) |>
+  dplyr::summarise(n_listings = dplyr::n(), share = mean(mostly_taken), .groups = "drop") |>
+  dplyr::mutate(percent = 100 * share)
+lowest_share = october_shares |> dplyr::filter(share == min(share))
+A6 = lowest_share$city
+A7 = lowest_share$share
+october_shares
+A6
+A7
+```
+
+## 6. Demand by season
+
+```{r seasonality}
+monthly_demand = reviews |>
+  dplyr::inner_join(listings |> dplyr::select(id, city), by = "id") |>
+  dplyr::filter(month >= "2025-07", month <= "2026-06") |>
+  dplyr::group_by(city, month) |>
+  dplyr::summarise(total_reviews = sum(reviews, na.rm = TRUE), .groups = "drop")
+twin_cities_demand = monthly_demand |> dplyr::filter(city == "Twin Cities")
+busiest_month = twin_cities_demand |>
+  dplyr::filter(total_reviews == max(total_reviews))
+A8 = busiest_month$month
+A9 = max(twin_cities_demand$total_reviews) / min(twin_cities_demand$total_reviews)
+twin_cities_demand
+A8
+A9
+```
+
+## 7. The Superhost premium
+
+```{r superhost-premium}
+superhost_summary = listings |>
+  dplyr::filter(room_type == "Entire home/apt", (host_is_superhost == "t" | host_is_superhost == "f")) |>
+  dplyr::group_by(city, host_is_superhost) |>
+  dplyr::summarise(median_price = median(price, na.rm = TRUE),
+            median_rating = median(review_scores_rating, na.rm = TRUE),
+            .groups = "drop")
+B1 = superhost_summary |>
+  dplyr::group_by(city) |>
+  dplyr::summarise(premium_dollars = median_price[host_is_superhost == "t"] -
+              median_price[host_is_superhost == "f"], .groups = "drop")
+superhost_summary
+print(as.data.frame(B1))
+```
+
+## 8. What the join lost
+
+```{r missing-availability}
+missing_availability = listings |> dplyr::anti_join(availability, by = "id")
+missing_by_city = missing_availability |> dplyr::count(city, sort = TRUE)
+A10 = nrow(missing_availability)
+A10
+missing_by_city
+```
+
+## B1. Advice to a Twin Cities host
+
+ **Chicago $43.75; Columbus $40.50; Twin Cities -$1.38.**
+The Twin Cities Superhost median is $1.38 lower than the other-host median, so these data do not suggest that the badge alone will let you guests charge more. It also does not explain what earning the badge would do to your own price. I would compare reviews per month before deciding it is not worth
+it.
+
+## B2. Market concentration and a ten-listing limit
+
+```{r city-concentration}
+city_concentration = listings_with_host_counts |>
+  dplyr::group_by(city) |>
+  dplyr::summarise(listing_share = 100 * mean(host_listing_count >= 10)) |>
+  dplyr::left_join(
+    concentration |> dplyr::select(city, revenue_share = percent),
+    by = "city"
+  )
+print(as.data.frame(city_concentration))
+```
+
+Columbus would likely be changed most because hosts with 10 or more listings hold 37.15% of its listings, compared with 31.90% in Chicago and 17.16% in the Twin Cities. The top 10% of listings earn 36.08%, 40.74%, and 40.27% of estimated revenue in those cities. These shares dont show its exact effect since hosts with exactly ten listings would already comply. The data cannot tell the council whether multiple host IDs belong to the same business, so host counts don't necessarily  represent business ownership.
