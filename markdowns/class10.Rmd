@@ -1,0 +1,61 @@
+---
+title: 'Class 10'
+author: "Isobel Bartels"
+date: "2026-09-28"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+## 'robotstxt'example: MU Bulletin
+In the chunk below, we used the [robotstxt package] (https://github.com/ropensci/robotstxt) to check if we are allowed to write a program that scrapes the page: <https://bulletin.miamioh.edu/courses-instruction/isa/>.
+```{r bulletin}
+robotstxt::paths_allowed(paths = "/courses-instruction/isa/", domain = "bulletin.miamioh.edu", bot = "*")
+```
+
+The 'TRUE' above means we are allowed to scrape it. 
+
+```{r}
+robotstxt::paths_allowed(paths = "/wiki/Miami_RedHawks_football", domain = "en.wikipedia.org", bot = "*")
+```
+
+The 'TRUE' above means we are allowed to scrape it. 
+
+```{r}
+#In some cases the roborots txt provides inconsistent answers 
+#typically you will get a warning that is incorrect
+#solution drop the trailing slash from the URL 
+#even better 
+robotstxt::paths_allowed(paths = "/jobs/", domain = "www.linkedin.com", bot = "*")
+```
+We are not able to scrape this 
+
+```{r}
+robotstxt::paths_allowed(paths = "/jobs", domain = "www.indeed.com", bot = "*")
+```
+We are not able to scrape this 
+
+```{r}
+robotstxt::paths_allowed(paths = "/viewjob", domain = "www.indeed.com", bot = "*")
+```
+We are not able to scrape this
+
+```{r bulletin}
+#Checking whether we are allowed to scrape this info 
+#This was done above and found to be true 
+#I will load the backend of the html into r using 
+# [a] rvest::read_html() | sometimes rvest::read_html_live() if the page has some dynamic content 
+#[b] in some cases, we will craft this as a request shown i slides httr2:: request() > .... > httr2::resp_body_html ()
+
+isa_courses_in_r = rvest::read_html("https://bulletin.miamioh.edu/courses-instruction/isa/")
+```
+
+```{r}
+isa_courses_in_r |> 
+  rvest::html_elements("#sc_sccoursedescs > div > p.courseblocktitle > strong")
+
+#course descrt
+```
+
+
