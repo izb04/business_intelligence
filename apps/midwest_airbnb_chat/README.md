@@ -2,7 +2,7 @@
 
 Built by Isobel Bartels for ISA 401 at Miami University. Ask plain-English questions about 14,887 Airbnb listings and inspect the resulting SQL, table, and charts.
 
-**Live app:** Pending Render deployment.
+**Live app:** https://business-intelligence-s9au.onrender.com
 
 ## Data
 
