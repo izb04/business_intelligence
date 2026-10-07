@@ -1,0 +1,89 @@
+---
+title: 'Assignment 07: Web Scraping the FSB Directory'
+author: "Isobel Bartels"
+date: "2026-10-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Check whether scraping is allowed
+
+```{r robots}
+robotstxt::paths_allowed(
+  paths = "/fsb/directory/",
+  domain = "https://miamioh.edu"
+)
+```
+
+## Scrape one department with a function
+
+
+```{r departments}
+departments = c(
+  "Accountancy",
+  "Economics",
+  "Entrepreneurship",
+  "Finance",
+  "Information Systems -- Analytics",
+  "Marketing",
+  "Management"
+)
+```
+
+
+```{r scraping-function}
+scrape_fsb_directory = function(dept) {
+  directory_url = paste0(
+    "https://miamioh.edu/fsb/directory/?up=/query/all/all/",
+    URLencode(dept, reserved = TRUE),
+    "/all"
+  )
+
+  webpage = rvest::read_html(directory_url)
+
+  names = webpage |>
+    rvest::html_elements("table td:nth-child(3) strong a") |>
+    rvest::html_text2()
+
+  positions = webpage |>
+    rvest::html_elements("table td:nth-child(3) i") |>
+    rvest::html_text2()
+
+  # href is the website address linked to the person's name.
+  websites = webpage |>
+    rvest::html_elements("table td:nth-child(3) strong a") |>
+    rvest::html_attr("href")
+
+  df = data.frame(
+    # Label each row with the searched department; display -- as &.
+    department = sub("--", "&", dept, fixed = TRUE),
+    name = names,
+    position = positions,
+    website = websites
+  )
+
+  return(df)
+}
+```
+
+## Combine all seven departments
+
+
+```{r all-departments}
+fsb_directory = purrr::map_df(
+  .x = departments,
+  .f = scrape_fsb_directory
+)
+
+head(fsb_directory)
+```
+
+The department counts below show that all seven departments are included in
+the same data frame.
+
+```{r department-counts}
+table(fsb_directory$department)
+```
