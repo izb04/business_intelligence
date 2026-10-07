@@ -54,24 +54,80 @@ page = rvest::read_html("https://isa401-salvage.vercel.app/registry?start=1")
 classes = page |>
   rvest::html_elements(".Dreadnought") |>
   rvest::html_text2()
-length(classes)   # check this first: one per card
+length(classes)  
 
-#stage 2 
+
+# From clicking on the site, we saw that our page changes by 50
+
+
 base = "https://isa401-salvage.vercel.app"
 starts = seq(from = 1, to = 351, by = 50)
-pages = vector("list", length(starts)) 
-
+pages = vector("list", length(starts))
 for (i in seq_along(starts)) {
   pg = rvest::read_html(paste0(base, "/registry?start=", starts[i]))
   pages[[i]] = data.frame(
-    class = pg |> rvest::html_element("div > ul > li:nth-child(1) > span") |> rvest::html_text2(),
-    value = ??? |> readr::parse_number()
+    class = pg |> rvest::html_elements("div > ul > li:nth-child(1) > span") |> rvest::html_text2(),
+    value = pg |> rvest::html_elements("span.salvage-value") |> rvest::html_text2() |> stringr::str_remove(" MCr")
   )
-  Sys.sleep(1)
+  Sys.sleep(1)   # robots.txt asks for it
 }
-registry = dplyr::bind_rows(pages)
+registry = dplyr::bind_rows(pages)   # 400 rows?
 
-dreadnought_df = registry |>
-  dplyr::filter(class == "Dreadnought")
+registry |> dplyr::filter(class == "Dreadnought") |> 
+  dplyr::mutate(value = as.numeric(value)) -> Dreadnoughts_df
+
+sum(Dreadnoughts_df$value)
 ```
+
+```{r}
+type_course = ellmer::type_object(
+  code = ellmer::type_string(
+    "Subject and number. For example, ISA 401"
+  ),
+  name = ellmer::type_string(
+    "Name of the course, without the code"
+  ),
+  credit_hours = ellmer::type_integer(
+    "The number in parentheses after the name",
+    required = FALSE
+  ),
+  prereqs = ellmer::type_string(
+    "The prerequisite[s] for this course",
+    required = FALSE
+  )
+)
+
+chat = ellmer::chat_openai(
+  model = "gpt-5-mini-2025-08-07"
+)
+chat$chat_structured(
+  course_text, type = type_course
+)
+```
+#ISA 125 Extraction 
+```{r isa125}
+chat = ellmer::chat_openai(
+  model = "gpt-5.6-luna"
+)
+
+isa125_courseblock = rvest::read_html("https://bulletin.miamioh.edu/courses-instruction/isa/") |>
+  
+  rvest::html_element("#sc_sccoursedescs > div:nth-child(1)") |>
+  rvest::html_text2()
+
+chat$chat_structured(
+  isa125_courseblock,
+  type = ellmer::type_object(
+    code = ellmer::type_string(
+      description = "The three letter abbreviation for the course and its number. 
+      for example, ISA 999 or FIN 444"
+    ),
+    name = ellmer::type_string(
+      description = "The titile of the course without the thrree letter abbreviation and the number, For example, introduction to Macroeeconomics. do not return a period after the name"
+    ),
+    cr_hr = ellmer::type_integer(description = "The number of credits ")
+  )
+)
+```
+
 
